@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
  *
- * Contact: Jae-young Hwnag <j-zero.hwang@samsung.com>
+ * Contact: Jae-young Hwang <j-zero.hwang@samsung.com>
  *
  * PROPRIETARY/CONFIDENTIAL
  *
