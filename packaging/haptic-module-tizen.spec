@@ -2,7 +2,7 @@
 Name:       haptic-module-tizen
 Summary:    Haptic Module library
 Version:    0.1.0
-Release:    2
+Release:    3
 Group:      System/Libraries
 License:    Apache License, Version 2.0
 Source0:    %{name}-%{version}.tar.gz
@@ -40,6 +40,10 @@ rm -rf %{buildroot}
 %{_libdir}/haptic/libhaptic-module.so
 
 %changelog
+* Thu Dec 21 2012 - Jae-young Hwang <j-zero.hwang@samsung.com>
+- Modify structure of functions
+- Tag : haptic-module_tizen_0.1.0-3
+
 * Mon Nov 27 2012 - Jiyoung Yun <jy910.yun@samsung.com>
 - support playing file and implement file structure
 - revised tid reset in thread

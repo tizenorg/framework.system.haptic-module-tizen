@@ -27,8 +27,8 @@
 #ifdef FEATURE_HAPTIC_MODULE_DLOG
     #define LOG_TAG "HAPTIC_MODULE"
     #include <dlog.h>
-    #define MODULE_LOG(fmt, args...)       SLOGD("<%s:%4d> " fmt "\n", __func__, __LINE__, ##args)
-    #define MODULE_ERROR(fmt, args...)     SLOGE("<%s:%4d> " fmt "\n", __func__, __LINE__, ##args)
+    #define MODULE_LOG(fmt, args...)       SLOGD(fmt, ##args)
+    #define MODULE_ERROR(fmt, args...)     SLOGE(fmt, ##args)
 #else
     #define MODULE_LOG(x, ...)
     #define MODULE_ERROR(x, ...)
