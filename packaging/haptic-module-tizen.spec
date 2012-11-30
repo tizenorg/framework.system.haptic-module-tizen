@@ -21,7 +21,11 @@ Requires(postun): /sbin/ldconfig
 %setup -q
 
 %build
-cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix}
+%if 0%{?simulator}
+cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DSIMULATOR=yes
+%else
+cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DSIMULATOR=no
+%endif
 make %{?jobs:-j%jobs}
 
 %install
