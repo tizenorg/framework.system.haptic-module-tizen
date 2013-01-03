@@ -4,7 +4,7 @@ Summary:    Haptic Module library
 Version:    0.1.0
 Release:    2
 Group:      System/Libraries
-License:    LGPL 2.1
+License:    Apache License, Version 2.0
 Source0:    %{name}-%{version}.tar.gz
 BuildRequires: cmake
 BuildRequires: pkgconfig(dlog)
