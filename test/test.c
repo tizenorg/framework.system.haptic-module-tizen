@@ -3,7 +3,7 @@
 	*
 	* Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
 	*
-	* Contact: Jae-young Hwnag <j-zero.hwang@samsung.com>
+	* Contact: Jae-young Hwang <j-zero.hwang@samsung.com>
 	*
 	* PROPRIETARY/CONFIDENTIAL
 	*
@@ -31,7 +31,7 @@
 
 #include <haptic_plugin_intf.h>
 
-#define HAPTIC_MODULE_PATH          "/usr/lib/haptic/libhaptic-module.so"
+#define HAPTIC_MODULE_PATH          "/usr/lib/libhaptic-module.so"
 
 static void *dlopen_handle;
 static const haptic_plugin_interface *plugin_intf;
