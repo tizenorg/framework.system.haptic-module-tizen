@@ -2,7 +2,7 @@
 Name:       haptic-module-tizen
 Summary:    Haptic Module library
 Version:    0.1.0
-Release:    4
+Release:    5
 Group:      System/Libraries
 License:    Apache License, Version 2.0
 Source0:    %{name}-%{version}.tar.gz
@@ -40,6 +40,10 @@ rm -rf %{buildroot}
 %{_libdir}/libhaptic-module.so
 
 %changelog
+* Tue Jan 08 2013 - Jae-young Hwang <j-zero.hwang@samsung.com>
+- Unify code for ARM/x86
+- Tag : haptic-module_tizen_0.1.0-5
+
 * Mon Jan 07 2013 - Jae-young Hwang <j-zero.hwang@samsung.com>
 - Change libhpatic-module.so file path
 - Tag : haptic-module_tizen_0.1.0-4
