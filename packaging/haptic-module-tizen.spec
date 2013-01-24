@@ -24,6 +24,9 @@ Requires(postun): /sbin/ldconfig
 %if 0%{?simulator}
 cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DSIMULATOR=yes
 %else
+%ifarch %{ix86}
+CFLAGS=`echo %{optflags} |sed 's/\-fexceptions//g'`
+%endif
 cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DSIMULATOR=no
 %endif
 make %{?jobs:-j%jobs}
