@@ -1,23 +1,20 @@
 /*
  * haptic-module-tizen
+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
  *
- * Copyright (c) 2011 - 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ * Licensed under the Apache License, Version 2.0 (the License);
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Contact: Jae-young Hwang <j-zero.hwang@samsung.com>
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * PROPRIETARY/CONFIDENTIAL
- *
- * This software is the confidential and proprietary information of
- * SAMSUNG ELECTRONICS ("Confidential Information"). You agree and acknowledge
- * that this software is owned by Samsung and you shall not disclose
- * such Confidential Information and shall use it only in accordance with the
- * terms of the license agreement you entered into with SAMSUNG ELECTRONICS.
- * SAMSUNG make no representations or warranties about the suitability
- * of the software, either express or implied, including but not limited
- * to the implied warranties of merchantability, fitness for a particular
- * purpose,
- * by licensee arising out of or releated to this software.
-*/
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -87,10 +84,12 @@ static int _cancel_thread(void)
 	}
 
 	if (pthread_join(tid, (void**)&ptr) < 0) {
+        tid = 0;
 		MODULE_ERROR("pthread_join is failed : %s", strerror(errno));
 		return -1;
 	}
 
+    tid = 0;
 	if (ptr == PTHREAD_CANCELED) {
 		MODULE_LOG("pthread canceled");
 	} else {
@@ -106,6 +105,7 @@ static void __clean_up(void *arg)
 	int i = 0;
 
 	MODULE_LOG("clean up handler!!! : %d", tid);
+	SetHapticEnable(0);
 
 	for (i = 0; i < pbuffer->channels; ++i) {
 		free(pbuffer->ppbuffer[i]);
@@ -117,9 +117,6 @@ static void __clean_up(void *arg)
 
 	pbuffer->channels = 0;
 	pbuffer->length = 0;
-
-	tid = 0;
-	MODULE_LOG("cleaned up handler : %d", tid);
 }
 
 static void* __play_cb(void *arg)
@@ -136,7 +133,6 @@ static void* __play_cb(void *arg)
 		for (j = 0; j < pbuffer->length; ++j) {
 			for (k = 0; k < pbuffer->channels; ++k) {
 				value = (pbuffer->ppbuffer[k][j] > 0) ? 1 : 0;
-				SetHapticLevel((int)pbuffer->ppbuffer[k][j]);
 				if (SetHapticEnable(value) < 0) {
 					MODULE_ERROR("SetHapticEnable fail");
 					pthread_exit((void *)-1);
@@ -146,8 +142,6 @@ static void* __play_cb(void *arg)
 			}
 		}
 	}
-
-	SetHapticEnable(0);
 
 	pthread_cleanup_pop(1);
 	pthread_exit((void *)0);
@@ -295,7 +289,6 @@ int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int *effec
 	HapticFile *pfile = NULL;
 	unsigned char **ppbuffer = NULL;
 	unsigned int channels, length, align, magnitude;
-	unsigned char data = 0x00;
 	int i = -1, j = -1;
 
 	pfile = (HapticFile*)vibe_buffer;
@@ -329,9 +322,7 @@ int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int *effec
 	/* Copy buffer from source buffer */
 	for (i = 0; i < length; ++i) {
 		for (j = 0; j < channels; ++j) {
-			data = (unsigned char)(pfile->data.pData[i*align+j]);
-			ppbuffer[j][i] = (unsigned char)(data*magnitude/0xFF);
-			MODULE_LOG("ppbuffer[%2d][%2d] : data(%x) -> (%x)", j, i, data, ppbuffer[j][i]);
+			ppbuffer[j][i] = (unsigned char)(pfile->data.pData[i*align+j]);
 		}
 	}
 
