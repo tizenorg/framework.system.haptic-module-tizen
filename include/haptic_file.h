@@ -55,8 +55,8 @@ typedef struct _HapticFile {
 } GCC_PACK HapticFile;
 
 typedef struct _HapticElement {
-	int stime;
 	int duration;
+	int level;
 } HapticElement;
 
 int GetHapticLevelMax(int *max);

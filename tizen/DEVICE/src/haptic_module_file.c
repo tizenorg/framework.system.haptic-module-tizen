@@ -26,8 +26,9 @@
 #include "haptic_module_log.h"
 #include "haptic_file.h"
 
-#define BITPERMS 50
-#define DEFAULT_EFFECT_HANDLE 0x02
+#define BITPERMS				50
+#define MAX_LEVEL				0xFF
+#define DEFAULT_EFFECT_HANDLE	0x02
 
 typedef struct {
 	unsigned char **ppbuffer;
@@ -225,8 +226,9 @@ int InsertHapticElement(unsigned char *vibe_buffer, int max_bufsize, HapticEleme
 	HapticFile *pfile = NULL;
 	int databuf = -1;
 	int needbuf = -1;
-	int stime, duration;
-	int i = -1, j = -1;
+	int duration;
+	unsigned char level;
+	int i = -1;
 
 	pfile = (HapticFile*)vibe_buffer;
 	if (_check_valid_haptic_format(pfile) < 0) {
@@ -234,24 +236,24 @@ int InsertHapticElement(unsigned char *vibe_buffer, int max_bufsize, HapticEleme
 		return -1;
 	}
 
-	stime = element->stime/BITPERMS;
 	duration = element->duration/BITPERMS;
+	level = (unsigned char)(element->level/pfile->fmt.dwMagnitude*MAX_LEVEL);
 
-	databuf = max_bufsize-sizeof(HapticFile);
-	needbuf = (stime+duration)*pfile->fmt.wBlockAlign;
-	MODULE_LOG("Data buffer size : %d, Need buffer size : %d", databuf, needbuf);
+	databuf = max_bufsize - sizeof(HapticFile);
+	needbuf = (pfile->fmt.dwDuration + duration)*pfile->fmt.wBlockAlign;
+	MODULE_LOG("Need buffer size : %d", needbuf);
 
 	if (databuf < needbuf) {
 		MODULE_ERROR("buffer lacks a memory : data buf(%d), need buf(%d)", databuf, needbuf);
 		return -1;
 	}
 
-	for (i = 0, j = stime; i < duration; ++i, j+=pfile->fmt.wBlockAlign) {
-		pfile->data.pData[j] = 0xFF;
+	for (i = pfile->fmt.dwDuration; i < pfile->fmt.dwDuration+duration; i++) {
+		pfile->data.pData[i] = level;
 	}
 
-	pfile->chunkSize = sizeof(HapticFile)+needbuf;
-	pfile->fmt.dwDuration = element->stime+element->duration;
+	pfile->chunkSize = sizeof(HapticFile)+needbuf ;
+	pfile->fmt.dwDuration = pfile->fmt.dwDuration+duration;
 	pfile->data.chunkSize = sizeof(DataChunk)+needbuf;
 	return 0;
 }

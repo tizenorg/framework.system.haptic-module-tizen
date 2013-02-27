@@ -466,6 +466,7 @@ static int _create_effect(unsigned char *vibe_buffer, int max_bufsize, haptic_mo
 {
 	int status;
 	int i;
+	HapticElement elem;
 
 	if (vibe_buffer == NULL)
 		return HAPTIC_MODULE_INVALID_ARGUMENT;
@@ -487,12 +488,10 @@ static int _create_effect(unsigned char *vibe_buffer, int max_bufsize, haptic_mo
 
 	MODULE_LOG("effect count : %d", max_elemcnt);
 	for (i = 0; i < max_elemcnt; ++i) {
-		HapticElement elem;
-
-		elem.stime = elem_arr[i].haptic_stime;
 		elem.duration = elem_arr[i].haptic_duration;
+		elem.level = elem_arr[i].haptic_level;
 
-		MODULE_LOG("%d) time : %d, duration : %d", i, elem_arr[i].haptic_stime, elem_arr[i].haptic_duration);
+		MODULE_LOG("%d) duration : %d, level : %d", i, elem_arr[i].haptic_duration, elem_arr[i].haptic_level);
 
 		status = InsertHapticElement(vibe_buffer, max_bufsize, &elem);
 		if (status < 0) {
