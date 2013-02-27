@@ -21,7 +21,7 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
-#include <devman.h>
+#include <device-node.h>
 
 #include "haptic_module_log.h"
 #include "haptic_file.h"
@@ -150,7 +150,7 @@ static void* __play_cb(void *arg)
 int GetHapticLevelMax(int *max)
 {
 	int status = -1;
-	status = device_get_property(DEVTYPE_HAPTIC, HAPTIC_PROP_LEVEL_MAX, max);
+	status = device_get_property(DEVICE_TYPE_VIBRATOR, PROP_VIBRATOR_LEVEL_MAX, max);
 	if (status < 0) {
 		MODULE_ERROR("device_get_property fail : %d", status);
 		return -1;
@@ -161,7 +161,7 @@ int GetHapticLevelMax(int *max)
 int SetHapticEnable(int value)
 {
 	int status = -1;
-	status = device_set_property(DEVTYPE_HAPTIC, HAPTIC_PROP_ENABLE, value);
+	status = device_set_property(DEVICE_TYPE_VIBRATOR, PROP_VIBRATOR_ENABLE, value);
 	if (status < 0) {
 		MODULE_ERROR("device_set_property fail : %d", status);
 		return -1;
@@ -172,7 +172,7 @@ int SetHapticEnable(int value)
 int SetHapticLevel(int value)
 {
 	int status = -1;
-	status = device_set_property(DEVTYPE_HAPTIC, HAPTIC_PROP_LEVEL, value);
+	status = device_set_property(DEVICE_TYPE_VIBRATOR, PROP_VIBRATOR_LEVEL, value);
 	if (status < 0) {
 		MODULE_ERROR("device_set_property fail : %d", status);
 		return -1;
@@ -183,7 +183,7 @@ int SetHapticLevel(int value)
 int SetHapticOneshot(int value)
 {
 	int status = -1;
-	status = device_set_property(DEVTYPE_HAPTIC, HAPTIC_PROP_ONESHOT, value);
+	status = device_set_property(DEVICE_TYPE_VIBRATOR, PROP_VIBRATOR_ONESHOT, value);
 	if (status < 0) {
 		MODULE_ERROR("device_set_property fail : %d", status);
 		return -1;
