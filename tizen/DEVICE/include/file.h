@@ -16,8 +16,8 @@
  */
 
 
-#ifndef __HAPTIC_FILE_H__
-#define __HAPTIC_FILE_H__
+#ifndef __FILE_H__
+#define __FILE_H__
 
 #define GCC_PACK	__attribute__((packed))
 
@@ -68,8 +68,8 @@ int InitializeHapticBuffer(unsigned char *vibe_buffer, int max_bufsize);
 int InsertHapticElement(unsigned char *vibe_buffer, int max_bufsize, HapticElement *element);
 int GetHapticBufferSize(const unsigned char *vibe_buffer, int *size);
 int GetHapticBufferDuration(const unsigned char *vibe_buffer, int *duration);
-int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int *effect_handle);
+int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int level, int *effect_handle);
 int OpenHapticDevice(void);
 int CloseHapticDevice(void);
 
-#endif // __HAPTIC_FIEL_H__
+#endif // __FIEL_H__

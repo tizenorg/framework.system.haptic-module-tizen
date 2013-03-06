@@ -2,7 +2,7 @@
 Name:       haptic-module-tizen
 Summary:    Haptic Module library
 Version:    0.1.0
-Release:    6
+Release:    7
 Group:      System/Libraries
 License:    APLv2
 Source0:    %{name}-%{version}.tar.gz

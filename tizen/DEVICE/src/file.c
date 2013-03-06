@@ -23,12 +23,18 @@
 #include <pthread.h>
 #include <device-node.h>
 
+#include "file.h"
 #include "haptic_module_log.h"
-#include "haptic_file.h"
 
 #define BITPERMS				50
 #define MAX_LEVEL				0xFF
 #define DEFAULT_EFFECT_HANDLE	0x02
+
+enum {
+	PLAY_HAPTIC = 0,
+	STOP_HAPTIC,
+	LEVEL_HAPTIC,
+};
 
 typedef struct {
 	unsigned char **ppbuffer;
@@ -106,7 +112,7 @@ static void __clean_up(void *arg)
 	int i = 0;
 
 	MODULE_LOG("clean up handler!!! : %d", tid);
-	SetHapticEnable(0);
+	__haptic_predefine_action(STOP_HAPTIC, NULL);
 
 	for (i = 0; i < pbuffer->channels; ++i) {
 		free(pbuffer->ppbuffer[i]);
@@ -124,21 +130,24 @@ static void* __play_cb(void *arg)
 {
 	BUFFER *pbuffer = (BUFFER*)arg;
 	int i = -1, j = -1, k = -1, value = -1;
+	unsigned char ch;
+	unsigned char prev = -1;
 
 	MODULE_LOG("Start thread");
 
 	pthread_cleanup_push(__clean_up, arg);
 
+	__haptic_predefine_action(PLAY_HAPTIC, NULL);
+
 	/* Copy buffer from source buffer */
 	for (i = 0; i < pbuffer->iteration; i++) {
 		for (j = 0; j < pbuffer->length; ++j) {
 			for (k = 0; k < pbuffer->channels; ++k) {
-				value = (pbuffer->ppbuffer[k][j] > 0) ? 1 : 0;
-				if (SetHapticEnable(value) < 0) {
-					MODULE_ERROR("SetHapticEnable fail");
-					pthread_exit((void *)-1);
+				ch = pbuffer->ppbuffer[k][j];
+				if (ch != prev) {
+					__haptic_predefine_action(LEVEL_HAPTIC, ch);
+					prev = ch;
 				}
-
 				usleep(BITPERMS * 1000);
 			}
 		}
@@ -286,11 +295,12 @@ int GetHapticBufferDuration(const unsigned char *vibe_buffer, int *duration)
 	return 0;
 }
 
-int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int *effect_handle)
+int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int level, int *effect_handle)
 {
 	HapticFile *pfile = NULL;
 	unsigned char **ppbuffer = NULL;
-	unsigned int channels, length, align, magnitude;
+	unsigned int channels, length, align;
+	unsigned char data;
 	int i = -1, j = -1;
 
 	pfile = (HapticFile*)vibe_buffer;
@@ -311,8 +321,7 @@ int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int *effec
 	channels = pfile->fmt.wChannels;
 	align = pfile->fmt.wBlockAlign;
 	length = (pfile->data.chunkSize-8)/align;
-	magnitude = pfile->fmt.dwMagnitude;
-	MODULE_LOG("channels : %d, length : %d, align : %d, magnitude : %d", channels, length, align, magnitude);
+	MODULE_LOG("channels : %d, length : %d, align : %d, level : %d", channels, length, align, level);
 
 	/* Create buffer */
 	ppbuffer = (unsigned char**)malloc(sizeof(unsigned char*)*channels);
@@ -324,7 +333,9 @@ int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int *effec
 	/* Copy buffer from source buffer */
 	for (i = 0; i < length; ++i) {
 		for (j = 0; j < channels; ++j) {
-			ppbuffer[j][i] = (unsigned char)(pfile->data.pData[i*align+j]);
+			data = (unsigned char)(pfile->data.pData[i*align+j]);
+			ppbuffer[j][i] = (unsigned char)(data*level/0xFF);
+			MODULE_LOG("ppbuffer[%2d][%2d] : data(%x) -> (%x)", j, i, data, ppbuffer[j][i]);
 		}
 	}
 

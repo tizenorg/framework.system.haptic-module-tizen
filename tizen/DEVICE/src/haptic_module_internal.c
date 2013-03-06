@@ -27,7 +27,7 @@
 
 #include <haptic_plugin_intf.h>
 #include "haptic_module_log.h"
-#include "haptic_file.h"
+#include "file.h"
 
 #ifndef EXTAPI
 #define EXTAPI __attribute__ ((visibility("default")))
@@ -216,13 +216,7 @@ static int __vibrate(const unsigned char *vibe_buffer, int iteration, int feedba
 	if (status != HAPTIC_MODULE_ERROR_NONE)
 		return status;
 
-	status = SetHapticLevel(level);
-	if (status < 0) {
-		MODULE_ERROR("SetHapticLevel fail : %d", status);
-		return HAPTIC_MODULE_OPERATION_FAILED;
-	}
-
-	status = PlayHapticBuffer(vibe_buffer, iteration, &handle);
+	status = PlayHapticBuffer(vibe_buffer, iteration, level, &handle);
 	if (status < 0) {
 		MODULE_ERROR("PlayHapticBuffer fail: %d", status);
 		return HAPTIC_MODULE_OPERATION_FAILED;
