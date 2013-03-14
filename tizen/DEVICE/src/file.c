@@ -27,7 +27,7 @@
 #include "haptic_module_log.h"
 
 #define BITPERMS				50
-#define MAX_LEVEL				0xFF
+#define MAX_LEVEL				255.0f
 #define DEFAULT_EFFECT_HANDLE	0x02
 
 enum {
@@ -246,7 +246,7 @@ int InsertHapticElement(unsigned char *vibe_buffer, int max_bufsize, HapticEleme
 	}
 
 	duration = element->duration/BITPERMS;
-	level = (unsigned char)(element->level/pfile->fmt.dwMagnitude*MAX_LEVEL);
+	level = (unsigned char)((unsigned int)element->level*MAX_LEVEL/100);
 
 	databuf = max_bufsize - sizeof(HapticFile);
 	needbuf = (pfile->fmt.dwDuration + duration)*pfile->fmt.wBlockAlign;

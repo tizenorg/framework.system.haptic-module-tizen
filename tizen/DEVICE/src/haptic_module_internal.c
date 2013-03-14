@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <vconf.h>
 
 #include <haptic_plugin_intf.h>
 #include "haptic_module_log.h"
@@ -36,8 +37,8 @@
 #define DEFAULT_MOTOR_COUNT	1
 #define DEFAULT_DEVICE_HANDLE	0x01
 #define DEFAULT_EFFECT_HANDLE	0x02
-
-#define HAPTIC_PLAY_FILE_EXT		".tht"
+#define HAPTIC_FEEDBACK_AUTO	101
+#define HAPTIC_PLAY_FILE_EXT	".tht"
 
 /* START of Static Function Section */
 static int __to_level(int feedback, int *type)
@@ -483,8 +484,13 @@ static int _create_effect(unsigned char *vibe_buffer, int max_bufsize, haptic_mo
 	MODULE_LOG("effect count : %d", max_elemcnt);
 	for (i = 0; i < max_elemcnt; ++i) {
 		elem.duration = elem_arr[i].haptic_duration;
-		elem.level = elem_arr[i].haptic_level;
-
+		if (elem_arr[i].haptic_level == HAPTIC_FEEDBACK_AUTO) {
+			vconf_get_int(VCONFKEY_SETAPPL_TOUCH_FEEDBACK_VIBRATION_LEVEL_INT, &elem_arr[i].haptic_level);
+			elem.level = elem_arr[i].haptic_level*20;
+		}
+		else {
+			elem.level = elem_arr[i].haptic_level;
+		}
 		MODULE_LOG("%d) duration : %d, level : %d", i, elem_arr[i].haptic_duration, elem_arr[i].haptic_level);
 
 		status = InsertHapticElement(vibe_buffer, max_bufsize, &elem);
