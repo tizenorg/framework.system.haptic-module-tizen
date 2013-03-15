@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -266,7 +266,7 @@ static int _close_device(int device_handle)
 		return HAPTIC_MODULE_OPERATION_FAILED;
 	}
 
-	status = SetHapticEnable(0);
+	status = StopHaptic();
 	if (status < 0) {
 		MODULE_ERROR("SetHapticEnable fail : %d", status);
 		return HAPTIC_MODULE_OPERATION_FAILED;
@@ -393,9 +393,9 @@ static int _stop_effect(int device_handle, int effect_handle)
 	if (effect_handle < 0)
 		return HAPTIC_MODULE_INVALID_ARGUMENT;
 
-	status = SetHapticEnable(0);
+	status = StopHaptic();
 	if (status < 0) {
-		MODULE_ERROR("SetHapticEnable fail : %d", status);
+		MODULE_ERROR("StopHaptic fail : %d", status);
 		return HAPTIC_MODULE_OPERATION_FAILED;
 	}
 
@@ -409,9 +409,9 @@ static int _stop_all_effects(int device_handle)
 	if (device_handle < 0)
 		return HAPTIC_MODULE_INVALID_ARGUMENT;
 
-	status = SetHapticEnable(0);
+	status = StopHaptic();
 	if (status < 0) {
-		MODULE_ERROR("SetHapticEnable fail : %d", status);
+		MODULE_ERROR("StopHaptic fail : %d", status);
 		return HAPTIC_MODULE_OPERATION_FAILED;
 	}
 
