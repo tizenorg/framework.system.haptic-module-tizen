@@ -9,7 +9,7 @@ Source0:    %{name}-%{version}.tar.gz
 BuildRequires: cmake
 BuildRequires: pkgconfig(dlog)
 BuildRequires: pkgconfig(vconf)
-BuildRequires: pkgconfig(haptic-plugin)
+BuildRequires: pkgconfig(deviced)
 BuildRequires: pkgconfig(device-node)
 
 Requires(post): /sbin/ldconfig

@@ -7,7 +7,7 @@ SET(SRCS
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-SET(DEPENDENTS "dlog vconf haptic-plugin device-node")
+SET(DEPENDENTS "dlog vconf deviced device-node")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(rpkgs REQUIRED ${DEPENDENTS})
