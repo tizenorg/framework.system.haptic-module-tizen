@@ -98,6 +98,7 @@ static int __sysnoti_send(struct sysnoti_type *msg)
 		close(sockfd);
 		return -1;
 	}
+	MODULE_LOG("connect : %x", sockfd);
 
 	__send_int(sockfd, msg->pid);
 	__send_int(sockfd, msg->cmd);
@@ -107,6 +108,7 @@ static int __sysnoti_send(struct sysnoti_type *msg)
 	for (i = 0; i < msg->argc; i++)
 		__send_str(sockfd, msg->argv[i]);
 
+	MODULE_LOG("read");
 	retry_cnt = 0;
 	while ((r = read(sockfd, &ret, sizeof(int))) < 0) {
 
@@ -126,11 +128,12 @@ static int __sysnoti_send(struct sysnoti_type *msg)
 		++retry_cnt;
 	}
 
+	MODULE_LOG("close (ret : %d) : %x", ret, sockfd);
 	close(sockfd);
 	return ret;
 }
 
-static int __haptic_call_predef_action(const char *type, int num, ...)
+int __haptic_call_predef_action(const char *type, int num, ...)
 {
 	struct sysnoti_type msg;
 	char *args;
@@ -158,16 +161,3 @@ static int __haptic_call_predef_action(const char *type, int num, ...)
 	return __sysnoti_send(&msg);
 }
 
-void __haptic_predefine_action(int prop, int val)
-{
-	char pid_buf[255];
-	char prop_buf[255];
-	char val_buf[255];
-
-	snprintf(pid_buf, sizeof(pid_buf), "%d", getpid());
-	snprintf(prop_buf, sizeof(prop_buf), "%d", prop);
-	snprintf(val_buf, sizeof(val_buf), "%d", val);
-
-	MODULE_LOG("pid : %d, type : %d, val : %d", getpid(), prop, val);
-	__haptic_call_predef_action(PREDEF_HAPTIC, HAPTIC_PARAM_CNT, pid_buf, prop_buf, val_buf);
-}

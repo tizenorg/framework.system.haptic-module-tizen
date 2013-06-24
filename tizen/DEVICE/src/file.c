@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 #include <pthread.h>
 #include <device-node.h>
@@ -30,13 +31,22 @@
 #define MAX_LEVEL				255.0f
 #define DEFAULT_EFFECT_HANDLE	0x02
 
+#define STATE_PLAY	0
+#define STATE_STOP	1
+
+#define PREDEF_HAPTIC           "haptic"
+
 enum {
-	PLAY_HAPTIC = 0,
-	STOP_HAPTIC,
-	LEVEL_HAPTIC,
+	OPEN = 0,
+	CLOSE,
+	PLAY,
+	ONESHOT,
+	STOP,
+	LEVEL,
 };
 
 typedef struct {
+	int handle;
 	unsigned char **ppbuffer;
 	int channels;
 	int length;
@@ -45,6 +55,8 @@ typedef struct {
 
 static pthread_t tid;
 static BUFFER gbuffer;
+static int stop;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int _check_valid_haptic_format(HapticFile *file)
 {
@@ -58,6 +70,22 @@ static int _check_valid_haptic_format(HapticFile *file)
 		return -1;
 
 	return 0;
+}
+
+static int __haptic_predefine_action(int handle, int prop, int val)
+{
+	char buf_pid[32];
+	char buf_prop[32];
+	char buf_handle[32];
+	char buf_val[32];
+
+	snprintf(buf_pid, sizeof(buf_pid), "%d", getpid());
+	snprintf(buf_prop, sizeof(buf_prop), "%d", prop);
+	snprintf(buf_handle, sizeof(buf_handle), "%d", handle);
+	snprintf(buf_val, sizeof(buf_val), "%d", val);
+
+	MODULE_LOG("pid : %s(%d), prop : %s, handle : %s", buf_pid, pthread_self(), buf_prop, buf_handle);
+	return __haptic_call_predef_action(PREDEF_HAPTIC, 4, buf_pid, buf_prop, buf_handle, buf_val);
 }
 
 static int _create_thread(void* data, void*(*func)(void*))
@@ -77,13 +105,24 @@ static int _create_thread(void* data, void*(*func)(void*))
 
 static int _cancel_thread(void)
 {
-	int *ptr = NULL;
-	int ret = -1;
+	int *ptr;
+	int ret;
 
 	if (!tid) {
 		MODULE_LOG("pthread not initialized");
 		return 0;
 	}
+
+	MODULE_LOG("cancel thread!!!");
+
+	stop = 1;
+
+	while (pthread_mutex_trylock(&mutex) == EBUSY) {
+		usleep(100);
+		MODULE_LOG("Already locked..");
+	}
+	__haptic_predefine_action(gbuffer.handle, STOP, NULL);
+	pthread_mutex_unlock(&mutex);
 
 	if ((ret = pthread_cancel(tid)) < 0) {
 		MODULE_ERROR("pthread_cancel is failed : %s, ret(%d)", strerror(errno), ret);
@@ -91,10 +130,11 @@ static int _cancel_thread(void)
 	}
 
 	if (pthread_join(tid, (void**)&ptr) < 0) {
-        tid = 0;
 		MODULE_ERROR("pthread_join is failed : %s", strerror(errno));
 		return -1;
 	}
+
+	stop = 0;
 
     tid = 0;
 	if (ptr == PTHREAD_CANCELED) {
@@ -109,10 +149,9 @@ static int _cancel_thread(void)
 static void __clean_up(void *arg)
 {
 	BUFFER *pbuffer = (BUFFER*)arg;
-	int i = 0;
+	int i;
 
 	MODULE_LOG("clean up handler!!! : %d", tid);
-	__haptic_predefine_action(STOP_HAPTIC, NULL);
 
 	for (i = 0; i < pbuffer->channels; ++i) {
 		free(pbuffer->ppbuffer[i]);
@@ -129,7 +168,7 @@ static void __clean_up(void *arg)
 static void* __play_cb(void *arg)
 {
 	BUFFER *pbuffer = (BUFFER*)arg;
-	int i = -1, j = -1, k = -1, value = -1;
+	int i, j, k;
 	unsigned char ch;
 	unsigned char prev = -1;
 
@@ -137,21 +176,29 @@ static void* __play_cb(void *arg)
 
 	pthread_cleanup_push(__clean_up, arg);
 
-	__haptic_predefine_action(PLAY_HAPTIC, NULL);
-
 	/* Copy buffer from source buffer */
 	for (i = 0; i < pbuffer->iteration; i++) {
 		for (j = 0; j < pbuffer->length; ++j) {
 			for (k = 0; k < pbuffer->channels; ++k) {
+				pthread_mutex_lock(&mutex);
+				if (stop) {
+					pthread_mutex_unlock(&mutex);
+					pthread_exit((void*)0);
+				}
 				ch = pbuffer->ppbuffer[k][j];
 				if (ch != prev) {
-					__haptic_predefine_action(LEVEL_HAPTIC, ch);
+					__haptic_predefine_action(pbuffer->handle, LEVEL, ch);
 					prev = ch;
 				}
+				pthread_mutex_unlock(&mutex);
 				usleep(BITPERMS * 1000);
 			}
 		}
 	}
+
+	pthread_mutex_lock(&mutex);
+	__haptic_predefine_action(gbuffer.handle, STOP, NULL);
+	pthread_mutex_unlock(&mutex);
 
 	pthread_cleanup_pop(1);
 	pthread_exit((void *)0);
@@ -159,7 +206,7 @@ static void* __play_cb(void *arg)
 
 int GetHapticLevelMax(int *max)
 {
-	int status = -1;
+	int status;
 	status = device_get_property(DEVICE_TYPE_VIBRATOR, PROP_VIBRATOR_LEVEL_MAX, max);
 	if (status < 0) {
 		MODULE_ERROR("device_get_property fail : %d", status);
@@ -168,50 +215,15 @@ int GetHapticLevelMax(int *max)
 	return 0;
 }
 
-int SetHapticEnable(int value)
+int InitializeBuffer(unsigned char *vibe_buffer, int max_bufsize)
 {
-	int status = -1;
-	status = device_set_property(DEVICE_TYPE_VIBRATOR, PROP_VIBRATOR_ENABLE, value);
-	if (status < 0) {
-		MODULE_ERROR("device_set_property fail : %d", status);
-		return -1;
-	}
-	return 0;
-}
-
-int SetHapticLevel(int value)
-{
-	int status = -1;
-	status = device_set_property(DEVICE_TYPE_VIBRATOR, PROP_VIBRATOR_LEVEL, value);
-	if (status < 0) {
-		MODULE_ERROR("device_set_property fail : %d", status);
-		return -1;
-	}
-	return 0;
-}
-
-int SetHapticOneshot(int value)
-{
-	int status = -1;
-	status = device_set_property(DEVICE_TYPE_VIBRATOR, PROP_VIBRATOR_ONESHOT, value);
-	if (status < 0) {
-		MODULE_ERROR("device_set_property fail : %d", status);
-		return -1;
-	}
-	return 0;
-}
-
-int InitializeHapticBuffer(unsigned char *vibe_buffer, int max_bufsize)
-{
-	HapticFile *pfile = NULL;
+	HapticFile *pfile;
 
 	if (max_bufsize < sizeof(HapticFile)) {
-		MODULE_ERROR("buffer lacks a memory : size(%d) minimum size(%d)", max_bufsize, sizeof(HapticFile));
+		MODULE_ERROR("buffer lacks a memory : size(%d) minimum size(%d)",
+					max_bufsize, sizeof(HapticFile));
 		return -1;
 	}
-
-	MODULE_LOG("FormatChunk : %d, DataChunk : %d, HapticFile : %d", sizeof(FormatChunk), sizeof(DataChunk), sizeof(HapticFile));
-	MODULE_LOG("Bufsize : %d", max_bufsize);
 
 	memset(vibe_buffer, 0, sizeof(char)*max_bufsize);
 
@@ -230,14 +242,14 @@ int InitializeHapticBuffer(unsigned char *vibe_buffer, int max_bufsize)
 	return 0;
 }
 
-int InsertHapticElement(unsigned char *vibe_buffer, int max_bufsize, HapticElement *element)
+int InsertElement(unsigned char *vibe_buffer, int max_bufsize, HapticElement *element)
 {
-	HapticFile *pfile = NULL;
-	int databuf = -1;
-	int needbuf = -1;
+	HapticFile *pfile;
+	int databuf;
+	int needbuf;
 	int duration;
 	unsigned char level;
-	int i = -1;
+	int i;
 
 	pfile = (HapticFile*)vibe_buffer;
 	if (_check_valid_haptic_format(pfile) < 0) {
@@ -267,9 +279,9 @@ int InsertHapticElement(unsigned char *vibe_buffer, int max_bufsize, HapticEleme
 	return 0;
 }
 
-int GetHapticBufferSize(const unsigned char *vibe_buffer, int *size)
+int GetBufferSize(const unsigned char *vibe_buffer, int *size)
 {
-	HapticFile *pfile = NULL;
+	HapticFile *pfile;
 
 	pfile = (HapticFile*)vibe_buffer;
 	if (_check_valid_haptic_format(pfile) < 0) {
@@ -281,9 +293,9 @@ int GetHapticBufferSize(const unsigned char *vibe_buffer, int *size)
 	return 0;
 }
 
-int GetHapticBufferDuration(const unsigned char *vibe_buffer, int *duration)
+int GetBufferDuration(const unsigned char *vibe_buffer, int *duration)
 {
-	HapticFile *pfile = NULL;
+	HapticFile *pfile;
 
 	pfile = (HapticFile*)vibe_buffer;
 	if (_check_valid_haptic_format(pfile) < 0) {
@@ -295,13 +307,37 @@ int GetHapticBufferDuration(const unsigned char *vibe_buffer, int *duration)
 	return 0;
 }
 
-int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int level, int *effect_handle)
+int PlayOneshot(int handle, int duration, int level)
 {
-	HapticFile *pfile = NULL;
-	unsigned char **ppbuffer = NULL;
+	char buf_pid[32];
+	char buf_prop[32];
+	char buf_handle[32];
+	char buf_duration[32];
+	char buf_level[32];
+
+	if (_cancel_thread() < 0) {
+		MODULE_ERROR("_cancel_thread fail");
+		return -1;
+	}
+
+	snprintf(buf_pid, sizeof(buf_pid), "%d", getpid());
+	snprintf(buf_prop, sizeof(buf_prop), "%d", ONESHOT);
+	snprintf(buf_handle, sizeof(buf_handle), "%d", handle);
+	snprintf(buf_duration, sizeof(buf_duration), "%d", duration);
+	snprintf(buf_level, sizeof(buf_level), "%d", level);
+
+	MODULE_LOG("pid : %s, prop : %s, handle : %s", buf_pid, buf_prop, buf_handle);
+	return __haptic_call_predef_action(PREDEF_HAPTIC, 5, buf_pid, buf_prop,
+										buf_handle, buf_duration, buf_level);
+}
+
+int PlayBuffer(int handle, const unsigned char *vibe_buffer, int iteration, int level)
+{
+	HapticFile *pfile;
+	unsigned char **ppbuffer;
 	unsigned int channels, length, align;
 	unsigned char data;
-	int i = -1, j = -1;
+	int i, j;
 
 	pfile = (HapticFile*)vibe_buffer;
 	if (_check_valid_haptic_format(pfile) < 0) {
@@ -339,10 +375,13 @@ int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int level,
 		}
 	}
 
+	gbuffer.handle = handle;
 	gbuffer.ppbuffer = ppbuffer;
 	gbuffer.channels = channels;
 	gbuffer.length = length;
 	gbuffer.iteration = iteration;
+
+	__haptic_predefine_action(gbuffer.handle, PLAY, NULL);
 
 	/* Start thread */
 	if (_create_thread(&gbuffer, __play_cb) < 0) {
@@ -350,22 +389,68 @@ int PlayHapticBuffer(const unsigned char *vibe_buffer, int iteration, int level,
 		return -1;
 	}
 
-	*effect_handle = DEFAULT_EFFECT_HANDLE;
 	return 0;
 }
 
-int StopHaptic(void)
+int Stop(int handle)
 {
-	__haptic_predefine_action(STOP_HAPTIC, NULL);
+	char buf_pid[32];
+	char buf_prop[32];
+	char buf_handle[32];
 
-	return 0;
-}
-
-int CloseHapticDevice(void)
-{
 	if (_cancel_thread() < 0) {
 		MODULE_ERROR("_cancel_thread fail");
 		return -1;
 	}
+
+	snprintf(buf_pid, sizeof(buf_pid), "%d", getpid());
+	snprintf(buf_prop, sizeof(buf_prop), "%d", STOP);
+	snprintf(buf_handle, sizeof(buf_handle), "%d", handle);
+
+	MODULE_LOG("pid : %s, prop : %s, handle : %s", buf_pid, buf_prop, buf_handle);
+	return __haptic_call_predef_action(PREDEF_HAPTIC, 3, buf_pid, buf_prop, buf_handle);
+}
+
+int OpenDevice(int handle)
+{
+	char buf_pid[32];
+	char buf_prop[32];
+	char buf_handle[32];
+
+	snprintf(buf_pid, sizeof(buf_pid), "%d", getpid());
+	snprintf(buf_prop, sizeof(buf_prop), "%d", OPEN);
+	snprintf(buf_handle, sizeof(buf_handle), "%d", handle);
+
+	MODULE_LOG("pid : %s, prop : %s, handle : %s", buf_pid, buf_prop, buf_handle);
+	return __haptic_call_predef_action(PREDEF_HAPTIC, 3, buf_pid, buf_prop, buf_handle);
+}
+
+int CloseDevice(int handle)
+{
+	char buf_pid[32];
+	char buf_prop[32];
+	char buf_handle[32];
+
+	if (_cancel_thread() < 0) {
+		MODULE_ERROR("_cancel_thread fail");
+		return -1;
+	}
+
+	snprintf(buf_pid, sizeof(buf_pid), "%d", getpid());
+	snprintf(buf_prop, sizeof(buf_prop), "%d", CLOSE);
+	snprintf(buf_handle, sizeof(buf_handle), "%d", handle);
+
+	MODULE_LOG("pid : %s, prop : %s, handle : %s", buf_pid, buf_prop, buf_handle);
+	return __haptic_call_predef_action(PREDEF_HAPTIC, 3, buf_pid, buf_prop, buf_handle);
+}
+
+int GetState(int handle, int *state)
+{
+	if (gbuffer.handle == handle) {
+		*state = STATE_PLAY;
+		return 0;
+	}
+
+	*state = STATE_STOP;
 	return 0;
 }
