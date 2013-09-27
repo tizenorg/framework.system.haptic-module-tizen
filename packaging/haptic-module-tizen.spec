@@ -9,7 +9,7 @@ Source0:    %{name}-%{version}.tar.gz
 BuildRequires: cmake
 BuildRequires: pkgconfig(dlog)
 BuildRequires: pkgconfig(vconf)
-BuildRequires: pkgconfig(haptic-plugin)
+BuildRequires: pkgconfig(deviced)
 BuildRequires: pkgconfig(device-node)
 
 Requires(post): /sbin/ldconfig
@@ -34,6 +34,8 @@ make %{?jobs:-j%jobs}
 %install
 rm -rf %{buildroot}
 %make_install
+mkdir -p %{buildroot}%{_datadir}/license
+cp LICENSE.APLv2 %{buildroot}%{_datadir}/license/%{name}
 
 %post -p /sbin/ldconfig
 
@@ -41,3 +43,4 @@ rm -rf %{buildroot}
 
 %files
 %{_libdir}/libhaptic-module.so
+%{_datadir}/license/%{name}
