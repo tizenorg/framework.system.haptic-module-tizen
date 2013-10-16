@@ -27,7 +27,7 @@
 #include <time.h>
 #include <vconf.h>
 
-#include <haptic-plugin-intf.h>
+#include <haptic_plugin_intf.h>
 #include "haptic_module_log.h"
 #include "file.h"
 
@@ -596,27 +596,27 @@ static int _convert_binary (void)
 	return HAPTIC_MODULE_NOT_SUPPORTED;
 }
 
-static struct haptic_ops haptic_plugin = {
-	.get_device_count		= _get_device_count,
-	.open_device			= _open_device,
-	.close_device			= _close_device,
-	.vibrate_monotone		= _vibrate_monotone,
-	.vibrate_file			= _vibrate_file,
-	.vibrate_buffer			= _vibrate_buffer,
-	.stop_effect			= _stop_effect,
-	.stop_all_effects		= _stop_all_effects,
-	.pause_effect			= _pause_effect,
-	.resume_effect			= _resume_effect,
-	.get_effect_state		= _get_effect_state,
-	.create_effect			= _create_effect,
-	.save_effect			= _save_effect,
-	.get_file_duration		= _get_file_duration,
-	.get_buffer_duration	= _get_buffer_duration,
-	.convert_binary			= _convert_binary,
+static const haptic_plugin_interface haptic_plugin_tizen = {
+	.haptic_internal_get_device_count		= _get_device_count,
+	.haptic_internal_open_device			= _open_device,
+	.haptic_internal_close_device			= _close_device,
+	.haptic_internal_vibrate_monotone		= _vibrate_monotone,
+	.haptic_internal_vibrate_file			= _vibrate_file,
+	.haptic_internal_vibrate_buffer			= _vibrate_buffer,
+	.haptic_internal_stop_effect			= _stop_effect,
+	.haptic_internal_stop_all_effects		= _stop_all_effects,
+	.haptic_internal_pause_effect			= _pause_effect,
+	.haptic_internal_resume_effect			= _resume_effect,
+	.haptic_internal_get_effect_state		= _get_effect_state,
+	.haptic_internal_create_effect			= _create_effect,
+	.haptic_internal_save_effect			= _save_effect,
+	.haptic_internal_get_file_duration		= _get_file_duration,
+	.haptic_internal_get_buffer_duration	= _get_buffer_duration,
+	.haptic_internal_convert_binary			= _convert_binary,
 };
 
 EXTAPI
-const struct haptic_ops *get_haptic_plugin_interface()
+const haptic_plugin_interface *get_haptic_plugin_interface()
 {
-	return &haptic_plugin;
+	return &haptic_plugin_tizen;
 }
