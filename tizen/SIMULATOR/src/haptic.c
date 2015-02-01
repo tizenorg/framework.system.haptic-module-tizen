@@ -24,7 +24,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include <haptic_plugin_intf.h>
+#include <haptic-plugin-intf.h>
 #include "haptic_module_log.h"
 
 #ifndef EXTAPI

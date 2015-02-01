@@ -6,10 +6,10 @@ Release:    9
 Group:      System/Libraries
 License:    APLv2
 Source0:    %{name}-%{version}.tar.gz
+ExclusiveArch: %{arm}
 BuildRequires: cmake
 BuildRequires: pkgconfig(dlog)
-BuildRequires: pkgconfig(vconf)
-BuildRequires: pkgconfig(haptic-plugin)
+BuildRequires: pkgconfig(deviced)
 BuildRequires: pkgconfig(device-node)
 
 Requires(post): /sbin/ldconfig

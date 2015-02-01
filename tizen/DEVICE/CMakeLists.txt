@@ -1,13 +1,11 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET(SRCS
-	src/haptic.c
-	src/file.c
-	src/sysnoti.c)
+	src/haptic.c)
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-SET(DEPENDENTS "dlog vconf haptic-plugin device-node")
+SET(DEPENDENTS "dlog deviced device-node")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(rpkgs REQUIRED ${DEPENDENTS})

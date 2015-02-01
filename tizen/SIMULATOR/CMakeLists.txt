@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
-SET(DEPENDENTS "dlog haptic-plugin")
+SET(DEPENDENTS "dlog deviced")
 
 SET(SRCS
 	src/haptic.c)
