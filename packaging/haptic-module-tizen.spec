@@ -4,7 +4,7 @@ Summary:    Haptic Module library
 Version:    0.1.0
 Release:    9
 Group:      System/Libraries
-License:    Apache-2.0
+License:    APLv2
 Source0:    %{name}-%{version}.tar.gz
 ExclusiveArch: %{arm}
 BuildRequires: cmake
